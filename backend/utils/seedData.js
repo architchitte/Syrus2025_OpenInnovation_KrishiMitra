@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const User = require('../models/User');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
@@ -108,8 +108,14 @@ const products = [
   }
 ];
 
-const seedData = async () => {
+const seedData = async (force = false) => {
   try {
+    const existing = await User.countDocuments();
+    if (!force && existing > 0) {
+      console.log('Database already has users; skipping seedData. Use seedData(true) to force.');
+      return;
+    }
+
     // Clear existing data
     await User.deleteMany({});
     await Category.deleteMany({});
@@ -153,6 +159,7 @@ const seedData = async () => {
     console.log('Database seeded successfully');
   } catch (error) {
     console.error('Error seeding data:', error);
+    throw error;
   }
 };
 

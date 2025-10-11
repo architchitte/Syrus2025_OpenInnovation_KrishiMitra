@@ -7,26 +7,35 @@ from pytrends.request import TrendReq
 from datetime import datetime, timedelta
 import logging
 import random
+import os
 from city_region_mapping import get_region_from_city, get_region_code
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load trained model
-with open('crop_model.pkl', 'rb') as f:
-    model = pickle.load(f)
+# Load trained model (robustly - may not exist in dev)
+model = None
+try:
+    model_path = os.path.join(os.path.dirname(__file__), 'crop_model.pkl')
+    if os.path.exists(model_path):
+        with open(model_path, 'rb') as f:
+            model = pickle.load(f)
+    else:
+        logger.warning('crop_model.pkl not found at %s, prediction endpoints will be disabled until a model is trained', model_path)
+except Exception as e:
+    logger.warning('Failed to load model: %s', e)
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# API Keys
-WEATHER_API_KEY = '2b5d5463eec19ec6ba7ff756575c7636'
-WEATHER_API_URL = 'http://api.openweathermap.org/data/2.5/weather'
+# API Keys - read from environment when possible (safe defaults removed)
+WEATHER_API_KEY = os.getenv('WEATHER_API_KEY')
+WEATHER_API_URL = os.getenv('WEATHER_API_URL', 'http://api.openweathermap.org/data/2.5/weather')
 
-# Market Price API Keys
-MARKET_API_KEY = 'ad7cbe4cfc5042fba02ed1ae5bd4b349'  # Example key for Agrimarket API
-MARKET_API_URL = 'https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070'
+# Market Price API Keys (example) - prefer setting via env
+MARKET_API_KEY = os.getenv('MARKET_API_KEY')
+MARKET_API_URL = os.getenv('MARKET_API_URL', 'https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070')
 
 # Initialize pytrends for Google Trends
 pytrends = TrendReq(hl='en-IN', tz=330)
@@ -42,9 +51,12 @@ def get_weather_data(city):
         response = requests.get(WEATHER_API_URL, params=params)
         data = response.json()
         
-        if data['cod'] != 200:
-            logger.error(f"Weather API error: {data['message']}")
-            return {'error': data['message']}
+        # OpenWeather may return 'cod' as str or int
+        cod = data.get('cod')
+        if str(cod) != '200':
+            msg = data.get('message', 'unknown error')
+            logger.error("Weather API error: %s", msg)
+            return {'error': msg}
         
         # Extract weather data
         temperature = data['main']['temp']
@@ -146,8 +158,11 @@ def get_demand_trends(crop, region):
 def get_weather():
     """Fetch weather data based on city input."""
     try:
-        data = request.json
-        city = data['city']
+        data = request.get_json(force=True, silent=True) or {}
+        city = data.get('city')
+        if not city:
+            return jsonify({'error': 'city is required'}), 400
+
         weather_info = get_weather_data(city)
         return jsonify(weather_info)
     except Exception as e:
@@ -179,8 +194,12 @@ def predict():
 
         # Get weather data
         weather_data = get_weather_data(city)
-        if 'error' in weather_data:
-            return jsonify({'error': weather_data['error']})
+        if not isinstance(weather_data, dict) or 'error' in weather_data:
+            return jsonify({'error': weather_data.get('error', 'failed to fetch weather data')}), 502
+
+        # Ensure model is loaded
+        if model is None:
+            return jsonify({'error': 'Model not available. Train the model first (run train_model.py or create crop_model.pkl).'}), 503
 
         # Get demand trends
         demand_trend = get_demand_trends('agriculture', region)

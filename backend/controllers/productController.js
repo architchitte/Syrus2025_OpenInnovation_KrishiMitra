@@ -1,43 +1,49 @@
 const Product = require('../models/Product');
 const User = require('../models/User');
+const asyncHandler = require('../utils/asyncHandler');
 
-// Get all products
-exports.getProducts = async (req, res) => {
-  try {
-    const { category, search, minPrice, maxPrice, isOrganic, sortBy } = req.query;
-    
-    let query = {};
-    
-    // Apply filters
-    if (category) query.category = category;
-    if (isOrganic === 'true') query.isOrganic = true;
-    if (search) query.name = { $regex: search, $options: 'i' };
-    if (minPrice && maxPrice) {
-      query.price = { $gte: parseFloat(minPrice), $lte: parseFloat(maxPrice) };
-    } else if (minPrice) {
-      query.price = { $gte: parseFloat(minPrice) };
-    } else if (maxPrice) {
-      query.price = { $lte: parseFloat(maxPrice) };
-    }
+// Get all products with pagination and filters
+exports.getProducts = asyncHandler(async (req, res) => {
+  const { category, search, minPrice, maxPrice, isOrganic, sortBy } = req.query;
+  const page = Math.max(parseInt(req.query.page || '1', 10), 1);
+  const pageSize = Math.min(parseInt(req.query.pageSize || '20', 10), 100);
 
-    // Apply sorting
-    let sortOptions = {};
-    if (sortBy === 'price-asc') sortOptions.price = 1;
-    else if (sortBy === 'price-desc') sortOptions.price = -1;
-    else if (sortBy === 'newest') sortOptions.createdAt = -1;
-    else if (sortBy === 'rating') sortOptions.rating = -1;
-    else sortOptions.createdAt = -1; // Default sort by newest
+  const skip = (page - 1) * pageSize;
 
-    const products = await Product.find(query)
+  let query = {};
+  if (category) query.category = category;
+  if (isOrganic === 'true') query.isOrganic = true;
+  if (search) query.name = { $regex: search, $options: 'i' };
+  if (minPrice && maxPrice) query.price = { $gte: parseFloat(minPrice), $lte: parseFloat(maxPrice) };
+  else if (minPrice) query.price = { $gte: parseFloat(minPrice) };
+  else if (maxPrice) query.price = { $lte: parseFloat(maxPrice) };
+
+  let sortOptions = {};
+  if (sortBy === 'price-asc') sortOptions.price = 1;
+  else if (sortBy === 'price-desc') sortOptions.price = -1;
+  else if (sortBy === 'newest') sortOptions.createdAt = -1;
+  else if (sortBy === 'rating') sortOptions.rating = -1;
+  else sortOptions.createdAt = -1;
+
+  const [items, total] = await Promise.all([
+    Product.find(query)
       .sort(sortOptions)
-      .populate('farmerId', 'name farmName farmLocation');
-    
-    res.status(200).json(products);
-  } catch (error) {
-    console.error('Error fetching products:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
+      .skip(skip)
+      .limit(pageSize)
+      .populate('farmerId', 'name farmName farmLocation')
+      .lean(),
+    Product.countDocuments(query)
+  ]);
+
+  const meta = {
+    page,
+    pageSize,
+    total,
+    hasMore: skip + items.length < total
+  };
+
+  res.success({ items, meta });
+});
 
 // Get a single product
 exports.getProduct = async (req, res) => {
@@ -65,8 +71,8 @@ exports.createProduct = async (req, res) => {
       return res.status(403).json({ message: 'Only farmers can create products' });
     }
     
-    const { name, description, price, category, image, stock, isOrganic, discountPrice } = req.body;
-    
+    const { name, description, price, category, image, quantity, unit, location, isOrganic, discountPrice } = req.body;
+
     const product = new Product({
       name,
       description,
@@ -74,7 +80,9 @@ exports.createProduct = async (req, res) => {
       discountPrice,
       category,
       image,
-      stock,
+      quantity,
+      unit,
+      location,
       isOrganic,
       farmerId: req.user.id
     });
@@ -210,22 +218,23 @@ exports.bulkUploadProducts = async (req, res) => {
       category: product.category,
       quantity: product.quantity,
       unit: product.unit,
-      farmer: product.farmer,
+      // Accept farmerId (preferred) or fallback to farmer name field if provided
+      farmerId: product.farmerId || product.farmer || null,
       location: product.location,
       isOrganic: product.isOrganic || false,
       harvestDate: product.harvestDate || new Date(),
-      rating: product.rating || 0,
-      reviews: product.reviews || 0
+  rating: product.rating || 0,
+  reviews: Array.isArray(product.reviews) ? product.reviews : []
     }));
 
     // Use bulkWrite with ordered: false to continue processing even if some documents fail
     const result = await Product.bulkWrite(
       validatedProducts.map(product => ({
         updateOne: {
-          filter: { name: product.name, farmer: product.farmer },
-          update: { $set: product },
-          upsert: true
-        }
+            filter: { name: product.name, farmerId: product.farmerId || product.farmer },
+            update: { $set: product },
+            upsert: true
+          }
       })),
       { ordered: false }
     );

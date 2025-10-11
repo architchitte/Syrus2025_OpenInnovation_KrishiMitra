@@ -35,10 +35,10 @@ const productSchema = new mongoose.Schema({
     required: [true, 'Product unit is required'],
     trim: true
   },
-  farmer: {
-    type: String,
-    required: [true, 'Farmer name is required'],
-    trim: true
+  farmerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'Farmer id is required']
   },
   location: {
     type: String,
@@ -59,16 +59,34 @@ const productSchema = new mongoose.Schema({
     max: 5,
     default: 0
   },
-  reviews: {
-    type: Number,
-    default: 0
-  }
+  reviews: [{
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    rating: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 5
+    },
+    comment: {
+      type: String
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true
 });
 
-// Create a compound index for name and farmer to help with duplicate detection
-productSchema.index({ name: 1, farmer: 1 }, { unique: true });
+// Indexes for common queries
+productSchema.index({ name: 1, farmerId: 1 }, { unique: true });
+productSchema.index({ category: 1 });
+productSchema.index({ createdAt: -1 });
 
 const Product = mongoose.model('Product', productSchema);
 

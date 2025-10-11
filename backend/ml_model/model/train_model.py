@@ -6,6 +6,7 @@ from sklearn.metrics import classification_report, accuracy_score
 from sklearn.preprocessing import LabelEncoder
 import pickle
 import json
+import os
 
 def get_season(month):
     """Map month to season"""
@@ -17,17 +18,24 @@ def get_season(month):
         return 'winter'
 
 def train_model():
-# Load and prepare the dataset
+    # Load and prepare the dataset
     try:
-        crop_data = pd.read_csv('Crop_recommendation.csv')
-        apy_data = pd.read_csv('apy.csv')
-        
+        base_dir = os.path.dirname(__file__)
+        crop_path = os.path.join(base_dir, 'Crop_recommendation.csv')
+        apy_path = os.path.join(base_dir, 'apy.csv')
+
+        crop_data = pd.read_csv(crop_path)
+        apy_data = pd.read_csv(apy_path)
+
         print("✅ Datasets loaded successfully")
         print(f"Crop data columns: {crop_data.columns.tolist()}")
         print(f"APY data columns: {apy_data.columns.tolist()}")
     except FileNotFoundError as e:
         print(f"❌ Error loading datasets: {e}")
-        return 
+        return
+    except Exception as e:
+        print(f"❌ Error loading datasets: {e}")
+        return
 
     # ======================================================================
     # DATA PREPROCESSING
@@ -45,16 +53,13 @@ def train_model():
     print("Crop recommendation data:", crop_data['recommended_crops'].unique()[:10])
     print("APY data:", apy_data['Crop'].unique()[:10])
     
-    # Get month input from user
-    while True:
-        try:
-            month = int(input("\nEnter current month (1-12): "))
-            if 1 <= month <= 12:
-                break
-            else:
-                print("Please enter a number between 1 and 12")
-        except ValueError:
-            print("Please enter a valid month number")
+    # Get month input from user (or default to current month)
+    try:
+        import datetime as _dt
+        month = _dt.datetime.now().month
+        print(f"Using current month: {month}")
+    except Exception:
+        month = 1
     
     season = get_season(month)
     print(f"\nMonth {month} is in {season} season")
@@ -66,20 +71,20 @@ def train_model():
             'Production': 'mean',
             'Area': 'mean'
         }).reset_index()
-        
+
         # Calculate features
         apy_stats['previous_sales'] = apy_stats.groupby('Crop')['Production'].shift(1)
         apy_stats['market_price'] = np.log(apy_stats['Production'] + 1) * 10
         apy_stats['demand_trend'] = apy_stats.groupby('Crop')['Production'].transform(
-            lambda x: x.rolling(3, min_periods=1).mean().pct_change(fill_method=None)
+            lambda x: x.rolling(3, min_periods=1).mean().pct_change()
         )
-        
+
         # Get most recent year's data
         latest_apy = apy_stats.sort_values('Crop_Year').groupby('Crop').last().reset_index()
-        
+
         # Add season column
         latest_apy['month_season'] = season
-        
+
     except Exception as e:
         print(f"❌ Error processing APY data: {e}")
         return
@@ -127,24 +132,25 @@ def train_model():
     try:
         le = LabelEncoder()
         merged_data['month_season_encoded'] = le.fit_transform(merged_data['month_season'])
-        
+
         # Save label encoders
-        with open('label_encoders.pkl', 'wb') as f:
+        encoders_path = os.path.join(os.path.dirname(__file__), 'label_encoders.pkl')
+        with open(encoders_path, 'wb') as f:
             pickle.dump({
                 'month_season': le.classes_
             }, f)
-            
+
         features = [
             'temperature', 'humidity', 'rainfall', 'month_season_encoded',
             'previous_sales', 'market_price', 'demand_trend'
         ]
-        
+
         X = merged_data[features]
         y = merged_data['recommended_crops']
-        
+
         print("\nFinal dataset shape:", X.shape)
         print("Target distribution:\n", y.value_counts())
-        
+
     except Exception as e:
         print(f"❌ Error during feature engineering: {e}")
         return
@@ -154,11 +160,11 @@ def train_model():
     # ======================================================================
     
     try:
-X_train, X_test, y_train, y_test = train_test_split(
+        X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42, stratify=y
-)
+        )
 
-model = RandomForestClassifier(
+        model = RandomForestClassifier(
             n_estimators=200,
             max_depth=25,
             min_samples_split=5,
@@ -167,8 +173,8 @@ model = RandomForestClassifier(
             random_state=42,
             n_jobs=-1
         )
-        
-model.fit(X_train, y_train)
+
+        model.fit(X_train, y_train)
 
         # Evaluation
         y_pred = model.predict(X_test)
@@ -177,16 +183,18 @@ model.fit(X_train, y_train)
         print(f"📊 Accuracy: {accuracy:.2%}")
         print("\n📈 Classification Report:")
         print(classification_report(y_test, y_pred))
-        
-        # Save model
-with open('crop_model.pkl', 'wb') as f:
-    pickle.dump(model, f)
 
-        print("\n💾 Model saved as crop_model.pkl")
-        
+        # Save model
+        model_path = os.path.join(os.path.dirname(__file__), 'crop_model.pkl')
+        with open(model_path, 'wb') as f:
+            pickle.dump(model, f)
+
+        print(f"\n💾 Model saved as {model_path}")
+
     except Exception as e:
         print(f"❌ Error during model training: {e}")
         return
 
 if __name__ == '__main__':
+    import os
     train_model()

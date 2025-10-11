@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 
 # Updated dataset with new features
 data = {
@@ -26,6 +27,7 @@ df['month_season'] = df['month_season'].astype('category').cat.codes
 df['demand_trend'] = df['demand_trend'].astype('category').cat.codes
 
 # Save as crop_data.csv in the model directory
-file_path = r"C:\Users\Umesh Chitte\Desktop\Archit\KRISHIMITRA\krishi-connect\backend\ml_model\model\crop_data.csv"
+base_dir = os.path.dirname(__file__)
+file_path = os.path.join(base_dir, 'crop_data.csv')
 df.to_csv(file_path, index=False)
 print(f"✅ crop_data.csv successfully created at: {file_path}")

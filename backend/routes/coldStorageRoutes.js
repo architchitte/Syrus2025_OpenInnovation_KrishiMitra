@@ -18,10 +18,11 @@ const {
 
 // Public routes
 router.get('/', getAllColdStorage);
-router.get('/:id', getColdStorageById);
-router.get('/:id/availability', checkAvailability);
+// Specific utility routes must come before parameterized routes to avoid route conflicts
 router.get('/nearby', findNearbyColdStorage);
 router.get('/delivery-estimate', calculateDeliveryEstimate);
+router.get('/:id/availability', checkAvailability);
+router.get('/:id', getColdStorageById);
 
 // Protected routes for all authenticated users
 router.post('/:id/book', protect, createBooking);

@@ -1,5 +1,6 @@
 const ColdStorage = require('../models/ColdStorage');
 const ColdStorageBooking = require('../models/ColdStorageBooking');
+const User = require('../models/User');
 const asyncHandler = require('express-async-handler');
 const coldStorageAPI = require('../utils/coldStorageAPI');
 
@@ -158,19 +159,42 @@ exports.createBooking = asyncHandler(async (req, res) => {
   
   // Calculate total price
   const totalPrice = coldStorage.pricePerTonPerDay * quantity * duration;
-  
-  const booking = await ColdStorageBooking.create({
+  // Build full booking payload matching ColdStorageBooking schema
+  // Determine start/end dates
+  const startDate = deliveryDate ? new Date(deliveryDate) : new Date();
+  const endDate = new Date(startDate.getTime());
+  endDate.setDate(endDate.getDate() + parseInt(duration || 1));
+
+  // Get provider info from owner user if available
+  let provider = { name: '', contact: '', email: '' };
+  try {
+    const owner = await User.findById(coldStorage.ownerId);
+    if (owner) {
+      provider = { name: owner.name || coldStorage.name, contact: owner.phoneNumber || owner.phone || coldStorage.contact || '', email: owner.email || '' };
+    } else {
+      provider = { name: coldStorage.name, contact: coldStorage.contact || '', email: '' };
+    }
+  } catch (e) {
+    provider = { name: coldStorage.name, contact: coldStorage.contact || '', email: '' };
+  }
+
+  const bookingPayload = {
     userId: req.user._id,
     storageId: coldStorage._id,
+    storageName: coldStorage.name,
     quantity,
-    duration,
-    transportType,
-    deliveryDate,
-    notes,
+    duration: parseInt(duration || 1),
+    startDate,
+    endDate,
     totalPrice,
+    paymentStatus: 'awaiting',
     status: 'pending',
-    paymentStatus: 'pending'
-  });
+    provider,
+    ratePerTon: coldStorage.pricePerTonPerDay || 0,
+    location: coldStorage.location
+  };
+
+  const booking = await ColdStorageBooking.create(bookingPayload);
   
   // Update available capacity
   coldStorage.available -= quantity;
