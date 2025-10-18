@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaShoppingBag, FaCog, FaHistory } from 'react-icons/fa';
 import './Profile.css';
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
-  const [userData, setUserData] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '1234567890',
-    address: '123 Farm Street, Rural Area, Country',
-    userType: 'buyer',
-    joinDate: 'January 2024'
-  });
+  const { user } = useAuth();
+  const [userData, setUserData] = useState(() => ({
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phoneNumber || '',
+    address: user?.address || '',
+    role: user?.role || 'consumer',
+    joinDate: user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : ''
+  }));
 
   const [orderHistory] = useState([
     {
@@ -48,12 +50,12 @@ const Profile = () => {
     <div className="profile-page">
       <div className="profile-container">
         <div className="profile-sidebar">
-          <div className="profile-header">
+            <div className="profile-header">
             <div className="profile-avatar">
               <FaUser />
             </div>
-            <h2>{userData.name}</h2>
-            <p>{userData.userType === 'buyer' ? 'Buyer' : 'Seller'}</p>
+            <h2>{userData.name || user?.name || 'Your Name'}</h2>
+            <p>{(userData.role === 'consumer' || user?.role === 'consumer') ? 'Consumer' : 'Farmer'}</p>
           </div>
           
           <nav className="profile-nav">
@@ -119,7 +121,7 @@ const Profile = () => {
                       onChange={handleInputChange}
                     />
                   ) : (
-                    <p>{userData.name}</p>
+                    <p>{userData.name || user?.name}</p>
                   )}
                 </div>
 
@@ -135,7 +137,7 @@ const Profile = () => {
                       onChange={handleInputChange}
                     />
                   ) : (
-                    <p>{userData.email}</p>
+                    <p>{userData.email || user?.email}</p>
                   )}
                 </div>
 
@@ -151,7 +153,7 @@ const Profile = () => {
                       onChange={handleInputChange}
                     />
                   ) : (
-                    <p>{userData.phone}</p>
+                    <p>{userData.phone || user?.phoneNumber}</p>
                   )}
                 </div>
 
@@ -166,8 +168,29 @@ const Profile = () => {
                       onChange={handleInputChange}
                     />
                   ) : (
-                    <p>{userData.address}</p>
+                    <p>{userData.address || user?.address}</p>
                   )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Farmer-specific details */}
+          {(userData.role === 'farmer' || user?.role === 'farmer') && (
+            <div className="profile-section">
+              <h2>Farmer Details</h2>
+              <div className="info-grid">
+                <div className="info-item">
+                  <label>Farm Name</label>
+                  <p>{user?.farmName || 'Not provided'}</p>
+                </div>
+                <div className="info-item">
+                  <label>Farm Location</label>
+                  <p>{user?.farmLocation || 'Not provided'}</p>
+                </div>
+                <div className="info-item">
+                  <label>Products Grown</label>
+                  <p>{(user?.productsGrown || []).join(', ') || 'Not provided'}</p>
                 </div>
               </div>
             </div>

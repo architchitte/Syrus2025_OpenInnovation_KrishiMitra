@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import api from '../utils/api';
 import { useCart } from '../context/CartContext';
 import { toast } from 'react-hot-toast';
 import CartSummary from '../components/checkout/CartSummary';
@@ -105,7 +106,7 @@ const Checkout = () => {
 
       console.log('Submitting order data:', orderData); // Add this for debugging
 
-      const response = await axios.post('http://localhost:5000/api/orders', orderData);
+  const response = await api.post('/orders', orderData);
       
       if (response.data.success) {
         clearCart();

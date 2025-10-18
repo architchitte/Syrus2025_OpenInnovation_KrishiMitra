@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import Navbar from '../Navbar';
+import Navbar from '../layout/Navbar';
 import { getCart, updateCartQuantity, removeFromCart } from '../../utils/cartApi';
 import './Cart.css';
 
-const API_URL = 'http://localhost:5000/api';
+// Using centralized cart API utilities which themselves use the configured API base
 
 function Cart() {
   const [cartItems, setCartItems] = useState([]);

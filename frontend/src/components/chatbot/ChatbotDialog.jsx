@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import api from '../../utils/api';
 import { v4 as uuidv4 } from 'uuid';
 import './ChatbotStyles.css';
 
-const API_URL = 'http://localhost:5000/api/chatbot';
+// chatbot endpoints mounted under /chatbot on backend
+const CHATBOT_BASE = import.meta.env.VITE_API_BASE ? `${import.meta.env.VITE_API_BASE.replace(/\/api\/?$/,'')}/api/chatbot` : 'http://localhost:5000/api/chatbot';
 
 // List of supported languages with flags
 const LANGUAGES = [
@@ -55,7 +57,7 @@ const ChatbotDialog = ({ onClose }) => {
     const createSession = async () => {
       try {
         const userId = localStorage.getItem('userId') || '';
-        const response = await axios.post(`${API_URL}/session`, { userId });
+  const response = await api.post('/chatbot/session', { userId });
         const newSessionId = response.data.sessionId;
         setSessionId(newSessionId);
         
@@ -128,7 +130,7 @@ const ChatbotDialog = ({ onClose }) => {
 
     try {
       const userId = localStorage.getItem('userId') || '';
-      const response = await axios.post(`${API_URL}/message`, {
+      const response = await api.post('/chatbot/message', {
         userId,
         sessionId,
         message: input,

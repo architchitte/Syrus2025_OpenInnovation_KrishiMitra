@@ -92,7 +92,7 @@ const Home = () => {
               transition={{ delay: 0.4 }}
               className="text-5xl md:text-7xl font-bold mb-6 leading-tight drop-shadow-lg"
             >
-              Fresh from Farm to Your <span className="text-green-300">Table</span>
+            <span className="text-green-300">Fresh From Farm To Your Table</span>
             </motion.h1>
             <motion.p 
               initial={{ opacity: 0, y: 20 }}

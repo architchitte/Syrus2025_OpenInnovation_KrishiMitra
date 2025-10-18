@@ -1,12 +1,13 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api';
 
 // Register a new user
 export const registerUser = async (userData) => {
   try {
     const response = await axios.post(`${API_URL}/auth/register`, userData);
-    return response.data;
+    // unwrap the API envelope { success, data } -> return data
+    return response.data?.data || response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Registration failed' };
   }
@@ -16,7 +17,8 @@ export const registerUser = async (userData) => {
 export const loginUser = async (credentials) => {
   try {
     const response = await axios.post(`${API_URL}/auth/login`, credentials);
-    return response.data;
+    // unwrap the API envelope { success, data } -> return data
+    return response.data?.data || response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Login failed' };
   }
@@ -33,7 +35,8 @@ export const getCurrentUser = async () => {
     const response = await axios.get(`${API_URL}/users/profile`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    return response.data;
+    // unwrap the API envelope
+    return response.data?.data || response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Failed to get user profile' };
   }

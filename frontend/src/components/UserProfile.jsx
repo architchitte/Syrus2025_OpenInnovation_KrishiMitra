@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import Navbar from './Navbar';
-
-const API_URL = 'http://localhost:5000/api';
+import api from '../utils/api';
+import Navbar from './layout/Navbar';
+import { useAuth } from '../context/AuthContext';
 
 // Fallback user data
 const fallbackUser = {
@@ -96,11 +95,11 @@ const UserProfile = () => {
   });
 
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
+  const { user: ctxUser, logout, setUser: setAuthUser } = useAuth();
 
   useEffect(() => {
-    // Redirect if not logged in
-    if (!token) {
+    // If no auth user in context, redirect to login
+    if (!ctxUser && !localStorage.getItem('token')) {
       navigate('/login');
       return;
     }
@@ -108,18 +107,20 @@ const UserProfile = () => {
     const fetchUserProfile = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${API_URL}/users/profile`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setUser(response.data);
+        const response = await api.get('/users/profile');
+        // Normalize response: { success, data }
+        const normalized = response?.data?.data || response?.data || null;
+        // Keep local state and AuthContext in sync
+        setUser(normalized);
+        try { setAuthUser && setAuthUser(normalized); localStorage.setItem('user', JSON.stringify(normalized)); } catch (e) { /* ignore */ }
         setFormData({
-          name: response.data.name || '',
-          email: response.data.email || '',
-          phone: response.data.phone || '',
-          street: response.data.address?.street || '',
-          city: response.data.address?.city || '',
-          state: response.data.address?.state || '',
-          pincode: response.data.address?.pincode || ''
+          name: normalized?.name || '',
+          email: normalized?.email || '',
+          phone: normalized?.phone || '',
+          street: normalized?.address?.street || '',
+          city: normalized?.address?.city || '',
+          state: normalized?.address?.state || '',
+          pincode: normalized?.address?.pincode || ''
         });
       } catch (error) {
         console.error('Error fetching user profile:', error);
@@ -141,10 +142,9 @@ const UserProfile = () => {
 
     const fetchOrders = async () => {
       try {
-        const response = await axios.get(`${API_URL}/orders`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setOrders(response.data);
+        const response = await api.get('/orders');
+        const normalized = response?.data?.data || response?.data || [];
+        setOrders(normalized);
       } catch (error) {
         console.error('Error fetching orders:', error);
         // Use fallback data for demo
@@ -207,8 +207,11 @@ const UserProfile = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    try {
+      logout();
+    } catch (e) {
+      try { localStorage.removeItem('token'); localStorage.removeItem('user'); } catch (_) {}
+    }
     navigate('/login');
   };
 

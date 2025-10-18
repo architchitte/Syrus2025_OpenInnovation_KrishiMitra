@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaUser, FaLock, FaLeaf, FaSpinner } from 'react-icons/fa';
 import { loginUser, setToken } from '../../utils/authApi';
+import { useAuth } from '../../context/AuthContext';
 import Input from '../Input';
 import toast from 'react-hot-toast';
 
@@ -16,6 +17,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState('');
   const [loginMethod, setLoginMethod] = useState('password'); // 'password' or 'otp'
+  const { setUser } = useAuth();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -81,12 +83,22 @@ const Login = () => {
       
       // Save token to localStorage
       setToken(response.token);
-      
+      // Update AuthContext so UI updates immediately
+      if (setUser) {
+        setUser({ id: response.id, name: response.name, email: response.email, role: response.role });
+        localStorage.setItem('user', JSON.stringify({ id: response.id, name: response.name, email: response.email, role: response.role }));
+      }
+
       // Show success toast
       toast.success('Login successful! Welcome to KrishiMitra');
-      
-      // Redirect to dashboard
-      navigate('/dashboard');
+
+      // Redirect based on role: farmers -> dashboard; consumers -> products page
+      const role = response.role || (JSON.parse(localStorage.getItem('user') || '{}').role);
+      if (role === 'farmer') {
+        navigate('/dashboard');
+      } else {
+        navigate('/products');
+      }
     } catch (error) {
       setApiError(error.message || 'Login failed. Please check your credentials.');
       toast.error('Login failed. Please check your credentials.');

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaShoppingCart, FaUser, FaSearch, FaLeaf, FaBars, FaTimes, FaRobot } from 'react-icons/fa';
 import ChatbotDialog from '../chatbot/ChatbotDialog';
 import { useCart } from '../../context/CartContext';
+import { getUserRole } from '../../utils/authHelpers';
+import { useAuth } from '../../context/AuthContext';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,6 +12,19 @@ const Navbar = () => {
   const [showChatbot, setShowChatbot] = useState(false);
   const { getCartCount } = useCart();
   const cartCount = getCartCount();
+  const { user, logout } = useAuth();
+  const role = user?.role || getUserRole();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    try {
+      logout();
+    } catch (e) {
+      // fallback: clear local storage
+      try { localStorage.removeItem('token'); localStorage.removeItem('user'); } catch (err) { /* ignore */ }
+    }
+    navigate('/login');
+  };
 
   // Handle scroll effect
   useEffect(() => {
@@ -34,40 +49,35 @@ const Navbar = () => {
             <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-dark to-primary-light">KrishiConnect</span>
           </Link>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation - role aware */}
           <div className="hidden md:flex items-center space-x-10">
-            <Link to="/products" className="text-neutral-600 hover:text-primary-color transition-colors relative group py-2">
-              Products
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary-color transition-all duration-300 group-hover:w-full"></span>
+            {/* Landing / common */}
+            <Link to="/" className="text-neutral-600 hover:text-primary-color transition-colors relative group py-2">
+              Home
             </Link>
-            <Link to="/dashboard" className="text-neutral-600 hover:text-primary-color transition-colors relative group py-2">
-              Dashboard
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary-color transition-all duration-300 group-hover:w-full"></span>
-            </Link>
-            <Link to="/cold-storage" className="text-neutral-600 hover:text-primary-color transition-colors relative group py-2">
-              Cold Storage
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary-color transition-all duration-300 group-hover:w-full"></span>
-            </Link>
-            <Link to="/bulk-buy" className="text-neutral-600 hover:text-primary-color transition-colors relative group py-2">
-              Bulk Buy
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary-color transition-all duration-300 group-hover:w-full"></span>
-            </Link>
-            <Link to="/crop-recommendation" className="text-neutral-600 hover:text-primary-color transition-colors relative group py-2">
-              AI Crop Guide
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary-color transition-all duration-300 group-hover:w-full"></span>
-            </Link>
-            <Link to="/about" className="text-neutral-600 hover:text-primary-color transition-colors relative group py-2">
-              About
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary-color transition-all duration-300 group-hover:w-full"></span>
-            </Link>
-            <Link to="/contact" className="text-neutral-600 hover:text-primary-color transition-colors relative group py-2">
-              Contact
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary-color transition-all duration-300 group-hover:w-full"></span>
-            </Link>
+            <Link to="/about" className="text-neutral-600 hover:text-primary-color transition-colors relative group py-2">About</Link>
+            <Link to="/contact" className="text-neutral-600 hover:text-primary-color transition-colors relative group py-2">Contact</Link>
+
+            {/* Role specific links */}
+            {role === 'farmer' ? (
+              <>
+                <Link to="/dashboard" className="text-neutral-600 hover:text-primary-color transition-colors relative group py-2">Dashboard</Link>
+                <Link to="/bulk-buy" className="text-neutral-600 hover:text-primary-color transition-colors relative group py-2">Bulk Buy</Link>
+                <Link to="/cold-storage" className="text-neutral-600 hover:text-primary-color transition-colors relative group py-2">Cold Storage</Link>
+                <Link to="/crop-recommendation" className="text-neutral-600 hover:text-primary-color transition-colors relative group py-2">AI Crop Guide</Link>
+                <Link to="/farmer/orders" className="text-neutral-600 hover:text-primary-color transition-colors relative group py-2">Orders</Link>
+              </>
+            ) : (
+              <>
+                <Link to="/products" className="text-neutral-600 hover:text-primary-color transition-colors relative group py-2">Products</Link>
+                <Link to="/cart" className="text-neutral-600 hover:text-primary-color transition-colors relative group py-2">Cart</Link>
+                <Link to="/my-orders" className="text-neutral-600 hover:text-primary-color transition-colors relative group py-2">My Orders</Link>
+              </>
+            )}
           </div>
 
           {/* Right Side Actions */}
-          <div className="hidden md:flex items-center space-x-6">
+            <div className="hidden md:flex items-center space-x-6">
             <div className="relative group">
               <input
                 type="text"
@@ -97,6 +107,16 @@ const Navbar = () => {
             >
               <FaRobot className="text-xl" />
             </button>
+            {/* Logout button when authenticated */}
+            {user && (
+              <button
+                onClick={handleLogout}
+                className="ml-2 text-sm text-red-600 hover:text-red-800"
+                aria-label="Logout"
+              >
+                Logout
+              </button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -116,36 +136,22 @@ const Navbar = () => {
       {isOpen && (
         <div className="md:hidden bg-white shadow-lg animate-fade-in">
           <div className="container mx-auto px-4 py-4 space-y-3">
-            <Link
-              to="/products"
-              className="block px-4 py-3 text-neutral-600 hover:text-primary-color hover:bg-neutral-50 rounded-lg transition-colors"
-            >
-              Products
-            </Link>
-            <Link
-              to="/dashboard"
-              className="block px-4 py-3 text-neutral-600 hover:text-primary-color hover:bg-neutral-50 rounded-lg transition-colors"
-            >
-              Dashboard
-            </Link>
-            <Link
-              to="/cold-storage"
-              className="block px-4 py-3 text-neutral-600 hover:text-primary-color hover:bg-neutral-50 rounded-lg transition-colors"
-            >
-              Cold Storage
-            </Link>
-            <Link
-              to="/bulk-buy"
-              className="block px-4 py-3 text-neutral-600 hover:text-primary-color hover:bg-neutral-50 rounded-lg transition-colors"
-            >
-              Bulk Buy
-            </Link>
-            <Link
-              to="/crop-recommendation"
-              className="block px-4 py-3 text-neutral-600 hover:text-primary-color hover:bg-neutral-50 rounded-lg transition-colors"
-            >
-              AI Crop Guide
-            </Link>
+            {/* Mobile role-aware links */}
+            {role === 'farmer' ? (
+              <>
+                <Link to="/dashboard" className="block px-4 py-3 text-neutral-600 hover:text-primary-color hover:bg-neutral-50 rounded-lg transition-colors">Dashboard</Link>
+                <Link to="/bulk-buy" className="block px-4 py-3 text-neutral-600 hover:text-primary-color hover:bg-neutral-50 rounded-lg transition-colors">Bulk Buy</Link>
+                <Link to="/cold-storage" className="block px-4 py-3 text-neutral-600 hover:text-primary-color hover:bg-neutral-50 rounded-lg transition-colors">Cold Storage</Link>
+                <Link to="/crop-recommendation" className="block px-4 py-3 text-neutral-600 hover:text-primary-color hover:bg-neutral-50 rounded-lg transition-colors">AI Crop Guide</Link>
+                <Link to="/farmer/orders" className="block px-4 py-3 text-neutral-600 hover:text-primary-color hover:bg-neutral-50 rounded-lg transition-colors">Orders</Link>
+              </>
+            ) : (
+              <>
+                <Link to="/products" className="block px-4 py-3 text-neutral-600 hover:text-primary-color hover:bg-neutral-50 rounded-lg transition-colors">Products</Link>
+                <Link to="/my-orders" className="block px-4 py-3 text-neutral-600 hover:text-primary-color hover:bg-neutral-50 rounded-lg transition-colors">My Orders</Link>
+                <Link to="/cart" className="block px-4 py-3 text-neutral-600 hover:text-primary-color hover:bg-neutral-50 rounded-lg transition-colors">Cart</Link>
+              </>
+            )}
             <Link
               to="/about"
               className="block px-4 py-3 text-neutral-600 hover:text-primary-color hover:bg-neutral-50 rounded-lg transition-colors"
@@ -183,6 +189,16 @@ const Navbar = () => {
               <Link to="/profile" className="text-neutral-600 hover:text-primary-color transition-colors">
                 <FaUser className="text-xl" />
               </Link>
+              {user ? (
+                <button
+                  onClick={() => { handleLogout(); setIsOpen(false); }}
+                  className="text-sm text-red-600 hover:text-red-800"
+                >
+                  Logout
+                </button>
+              ) : (
+                <Link to="/login" className="text-neutral-600 hover:text-primary-color">Login</Link>
+              )}
               <button
                 onClick={() => setShowChatbot(true)}
                 className="bg-gradient-to-r from-primary-color to-primary-light text-white p-2.5 rounded-full hover:shadow-md transition-all duration-300"

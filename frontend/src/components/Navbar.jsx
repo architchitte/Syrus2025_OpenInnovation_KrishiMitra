@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCart } from '../utils/cartApi';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
   const [cartCount, setCartCount] = useState(0);
@@ -9,6 +10,7 @@ const Navbar = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
+  const { user: ctxUser, logout } = useAuth();
 
   useEffect(() => {
     // Update cart count
@@ -91,9 +93,8 @@ const Navbar = () => {
                   </Link>
                   <button 
                     onClick={() => {
-                      localStorage.removeItem('token');
-                      localStorage.removeItem('user');
-                      window.location.reload();
+                      try { logout(); } catch (e) { try { localStorage.removeItem('token'); localStorage.removeItem('user'); } catch (_) {} }
+                      navigate('/login');
                     }}
                     className="text-sm text-red-600 hover:text-red-800"
                   >

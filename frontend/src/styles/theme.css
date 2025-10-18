@@ -1,0 +1,38 @@
+/* Theme base styles for KrishiMitra */
+@layer base {
+  :root {
+    --brand-forest-green: #226A2E;
+    --brand-dark-green: #0E2F23;
+    --brand-teal-blue: #54A0B3;
+    --brand-sky-blue: #8FC9DC;
+    --brand-light-aqua: #C7E4EB;
+  }
+
+  html, body, #root {
+    height: 100%;
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    color: #0f172a; /* dark text */
+    background: linear-gradient(180deg, #ffffff 0%, var(--brand-light-aqua) 100%);
+  }
+
+  h1,h2,h3,h4,h5,h6 {
+    font-family: 'Poppins', 'Inter', sans-serif;
+    color: var(--brand-forest-green);
+  }
+
+  .btn-primary {
+    background-color: var(--brand-forest-green);
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--brand-dark-green);
+  }
+
+  .card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 18px rgba(16,24,40,0.06);
+    padding: 1rem;
+  }
+}

@@ -58,7 +58,8 @@ const AICropRecommendation = () => {
   useEffect(() => {
     const fetchRegions = async () => {
       try {
-        const response = await axios.get('http://localhost:5001/regions');
+  const ML_BASE = import.meta.env.VITE_ML_BASE || 'http://localhost:5001';
+  const response = await axios.get(`${ML_BASE}/regions`);
         setAllRegions(response.data);
       } catch (err) {
         console.error('Error fetching regions:', err);
@@ -78,7 +79,8 @@ const AICropRecommendation = () => {
     setError(null);
     try {
       // Fetch crop predictions with all data
-      const predictRes = await axios.post('http://localhost:5001/predict', {
+  const ML_BASE = import.meta.env.VITE_ML_BASE || 'http://localhost:5001';
+  const predictRes = await axios.post(`${ML_BASE}/predict`, {
         city,
         month: parseInt(month),
       });

@@ -108,8 +108,11 @@ const Register = () => {
         navigate('/login');
       }, 2000);
     } catch (error) {
-      setApiError(error.message || 'Registration failed. Please try again.');
-      toast.error('Registration failed. Please try again.');
+      // Prefer backend provided message structure if available
+      const backend = error?.response?.data || error;
+      const message = backend?.error?.message || backend?.message || error.message || 'Registration failed. Please try again.';
+      setApiError(message);
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }

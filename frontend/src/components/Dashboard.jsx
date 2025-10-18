@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import Navbar from './Navbar';
+import Navbar from './layout/Navbar';
 import { addToCart } from '../utils/cartApi';
+import api from '../utils/api';
 import { fetchProductImages, fetchFarmerImages } from '../utils/imageApi';
 import FarmingAssistant from './chatbot/FarmingAssistant';
 import ChatbotButton from './chatbot/ChatbotButton';
 
-const API_URL = 'http://localhost:5000/api';
+// use centralized api client
 
 // Fallback product data for when API is unavailable
 const fallbackProducts = [
@@ -136,7 +137,7 @@ const Dashboard = () => {
     // Function to fetch categories
     const fetchCategories = async () => {
       try {
-        const response = await axios.get(`${API_URL}/categories`);
+        const response = await api.get('/categories');
         setCategories(response.data);
       } catch (error) {
         console.error('Error fetching categories:', error);
@@ -161,7 +162,7 @@ const Dashboard = () => {
     const fetchProducts = async () => {
       try {
         setIsLoading(true);
-        const response = await axios.get(`${API_URL}/products`, {
+        const response = await api.get('/products', {
           params: { category: selectedCategory, search: searchTerm }
         });
         setProducts(response.data);

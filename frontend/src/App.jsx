@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/utils/ProtectedRoute';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import Home from './components/home/Home';
@@ -11,6 +13,8 @@ import Profile from './components/user/Profile';
 import ColdStorage from './components/coldStorage/ColdStorage';
 import BulkBuy from './components/bulkBuy/BulkBuy';
 import Orders from './components/orders/Orders';
+import MyOrders from './pages/MyOrders';
+import FarmerOrders from './pages/FarmerOrders';
 import ProductsPage from './pages/ProductsPage';
 import ProductDetailsPage from './pages/ProductDetailsPage';
 import CartPage from './pages/CartPage';
@@ -29,6 +33,7 @@ import './App.css';
 const App = () => {
   return (
     <CartProvider>
+      <AuthProvider>
       <Router>
         <ScrollToTop />
         <div className="app min-h-screen flex flex-col bg-neutral-50">
@@ -44,14 +49,16 @@ const App = () => {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/profile" element={<Profile />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/cold-storage" element={<ColdStorage />} />
-              <Route path="/bulk-buy" element={<BulkBuy />} />
+              <Route path="/dashboard" element={<ProtectedRoute requiredRole={'farmer'}><DashboardPage /></ProtectedRoute>} />
+              <Route path="/cold-storage" element={<ProtectedRoute requiredRole={'farmer'}><ColdStorage /></ProtectedRoute>} />
+              <Route path="/bulk-buy" element={<ProtectedRoute requiredRole={'farmer'}><BulkBuy /></ProtectedRoute>} />
               <Route path="/orders" element={<Orders />} />
+              <Route path="/my-orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
+              <Route path="/farmer/orders" element={<ProtectedRoute requiredRole={'farmer'}><FarmerOrders /></ProtectedRoute>} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/about/article/:id" element={<ArticleDetail articles={articles} />} />
               <Route path="/contact" element={<ContactPage />} />
-              <Route path="/crop-recommendation" element={<AICropRecommendation />} />
+              <Route path="/crop-recommendation" element={<ProtectedRoute requiredRole={'farmer'}><AICropRecommendation /></ProtectedRoute>} />
             </Routes>
           </main>
           <Footer />
@@ -83,6 +90,7 @@ const App = () => {
           }} />
         </div>
       </Router>
+      </AuthProvider>
     </CartProvider>
   );
 };

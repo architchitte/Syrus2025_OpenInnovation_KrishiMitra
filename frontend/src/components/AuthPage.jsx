@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 
 const AuthPage = ({ isLogin }) => {
   const [formData, setFormData] = useState({ email: "", password: "", name: "" });
@@ -9,6 +11,8 @@ const AuthPage = ({ isLogin }) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const { login } = useAuth();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
@@ -17,18 +21,18 @@ const AuthPage = ({ isLogin }) => {
       : { name: formData.name, email: formData.email, password: formData.password, role: "user" };
 
     try {
-      const res = await fetch(`http://localhost:5000${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
+      const response = await api.post(endpoint.replace(/^\/api/, '/auth'), body);
+      const data = response.data;
       if (data.token) {
-        localStorage.setItem("token", data.token);
-        navigate("/dashboard"); // Redirect after login
+        try { localStorage.setItem('token', data.token); } catch (e) {}
+        // If backend returned user data, prefer that
+        const userData = data.user || data;
+        try { login(userData); } catch (e) {}
+        // Redirect based on role
+        const role = userData?.role || 'user';
+        if (role === 'farmer') navigate('/dashboard'); else navigate('/products');
       } else {
-        alert(data.message);
+        alert(data.message || 'Authentication failed');
       }
     } catch (error) {
       console.error("Error:", error);

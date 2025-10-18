@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { getLocalCart, updateLocalCartQuantity, removeFromLocalCart } from '../utils/cartUtils';
-
-const API_URL = 'http://localhost:5000/api';
+import api from '../utils/api';
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -29,9 +28,7 @@ const Cart = () => {
       if (token) {
         // If authenticated, try to fetch from API
         try {
-          const response = await axios.get(`${API_URL}/users/cart`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          const response = await api.get('/users/cart');
           setCartItems(response.data);
         } catch (error) {
           console.error('Error fetching cart from API:', error);
@@ -70,11 +67,7 @@ const Cart = () => {
 
       // Update on server if authenticated
       if (token) {
-        await axios.put(
-          `${API_URL}/users/cart/${productId}`,
-          { quantity: newQuantity },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await api.put(`/users/cart/${productId}`, { quantity: newQuantity });
       }
     } catch (error) {
       console.error('Error updating quantity:', error);
@@ -99,9 +92,7 @@ const Cart = () => {
 
       // Update on server if authenticated
       if (token) {
-        await axios.delete(`${API_URL}/users/cart/${productId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await api.delete(`/users/cart/${productId}`);
       }
     } catch (error) {
       console.error('Error removing item:', error);

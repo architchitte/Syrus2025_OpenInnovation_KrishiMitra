@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import Navbar from './Navbar';
+import api from '../utils/api';
+import Navbar from './layout/Navbar';
 import { getCartItems, calculateCart, clearCart } from '../utils/cartUtils';
 
-const API_URL = 'http://localhost:5000/api';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -33,25 +33,23 @@ const Checkout = () => {
   useEffect(() => {
     // Get user data if logged in
     if (token) {
-      axios.get(`${API_URL}/users/profile`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      .then(response => {
-        const userData = response.data;
-        setFormData(prevState => ({
-          ...prevState,
-          name: userData.name || '',
-          email: userData.email || '',
-          phone: userData.phone || '',
-          address: userData.address?.street || '',
-          city: userData.address?.city || '',
-          state: userData.address?.state || '',
-          pincode: userData.address?.pincode || '',
-        }));
-      })
-      .catch(err => {
-        console.error('Error fetching user data:', err);
-      });
+      api.get('/users/profile')
+        .then(response => {
+          const userData = response.data;
+          setFormData(prevState => ({
+            ...prevState,
+            name: userData.name || '',
+            email: userData.email || '',
+            phone: userData.phone || '',
+            address: userData.address?.street || '',
+            city: userData.address?.city || '',
+            state: userData.address?.state || '',
+            pincode: userData.address?.pincode || '',
+          }));
+        })
+        .catch(err => {
+          console.error('Error fetching user data:', err);
+        });
     }
     
     // Load cart items
@@ -132,9 +130,7 @@ const Checkout = () => {
       let response;
       if (token) {
         // Send to API
-        response = await axios.post(`${API_URL}/orders`, orderData, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        response = await api.post('/orders', orderData);
       } else {
         // Store locally and show success (normally would use API)
         // This is a fallback for non-logged in users

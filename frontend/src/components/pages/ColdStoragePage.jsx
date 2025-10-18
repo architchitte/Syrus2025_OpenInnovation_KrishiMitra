@@ -6,8 +6,7 @@ import MumbaiMap from '../components/MumbaiMap';
 import { toast } from 'react-hot-toast';
 import BookingManagement from '../coldStorage/BookingManagement';
 import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import api from '../../utils/api';
 
 const ColdStoragePage = () => {
   const navigate = useNavigate();
@@ -56,9 +55,7 @@ const ColdStoragePage = () => {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get(`${API_URL}/cold-storage`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/cold-storage');
 
       setFacilities(response.data);
       
@@ -153,9 +150,7 @@ const ColdStoragePage = () => {
         location: selectedFacility.location
       };
 
-      await axios.post(`${API_URL}/cold-storage-bookings`, bookingData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.post('/cold-storage-bookings', bookingData);
       
       // Update available capacity locally
       const updatedFacilities = facilities.map(f => {

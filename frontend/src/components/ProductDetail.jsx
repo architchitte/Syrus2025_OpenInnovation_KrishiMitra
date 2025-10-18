@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import Navbar from './Navbar';
+import Navbar from './layout/Navbar';
 import { addToCart } from '../utils/cartApi';
 import { fetchProductImages } from '../utils/imageApi';
 
-const API_URL = 'http://localhost:5000/api';
+import api from '../utils/api';
 
 // Fallback product data
 const fallbackProducts = [
@@ -62,7 +62,7 @@ const ProductDetail = () => {
     const fetchProduct = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${API_URL}/products/${id}`);
+  const response = await api.get(`/products/${id}`);
         
         // Enhance product with additional images if needed
         let productData = response.data;
@@ -173,12 +173,8 @@ const ProductDetail = () => {
       return;
     }
 
-    try {
-      await axios.post(
-        `${API_URL}/users/wishlist`,
-        { productId: id },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      try {
+        await api.post('/users/wishlist', { productId: id });
       alert('Product added to wishlist');
     } catch (error) {
       console.error('Error adding to wishlist:', error);

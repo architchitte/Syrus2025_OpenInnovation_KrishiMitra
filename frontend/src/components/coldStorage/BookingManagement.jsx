@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { FaCheckCircle, FaClock, FaTimesCircle, FaMoneyBillWave, FaEye, FaTimes, FaWarehouse, FaCalendarAlt } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import api from '../../utils/api';
 
 const BookingManagement = () => {
   const [bookings, setBookings] = useState([]);
@@ -32,10 +31,7 @@ const BookingManagement = () => {
         throw new Error('Authentication required');
       }
 
-      const response = await axios.get(`${API_URL}/cold-storage-bookings`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
+      const response = await api.get('/cold-storage-bookings');
       setBookings(response.data);
     } catch (error) {
       console.error('Error fetching bookings:', error);
@@ -60,11 +56,7 @@ const BookingManagement = () => {
         throw new Error('Authentication required');
       }
 
-      await axios.patch(
-        `${API_URL}/cold-storage-bookings/${selectedBooking._id}/payment`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.patch(`/cold-storage-bookings/${selectedBooking._id}/payment`, {});
 
       // Update local state
       setBookings(prevBookings =>
@@ -100,10 +92,7 @@ const BookingManagement = () => {
         throw new Error('Authentication required');
       }
 
-      await axios.delete(
-        `${API_URL}/cold-storage-bookings/${selectedBooking._id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.delete(`/cold-storage-bookings/${selectedBooking._id}`);
 
       // Update local state
       setBookings(prevBookings =>

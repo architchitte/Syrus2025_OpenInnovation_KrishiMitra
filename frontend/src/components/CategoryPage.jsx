@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import Navbar from './Navbar';
+import api from '../utils/api';
+import Navbar from './layout/Navbar';
 import { addToCart } from '../utils/cartUtils';
 
-const API_URL = 'http://localhost:5000/api';
+// use centralized api client
 
 // Fallback product data for when API is unavailable
 const fallbackProductsByCategory = {
@@ -298,7 +299,7 @@ const CategoryPage = () => {
       
       try {
         // Attempt to get data from API
-        const response = await axios.get(`${API_URL}/products`, {
+        const response = await api.get('/products', {
           params: { category: formattedCategoryName }
         });
         
